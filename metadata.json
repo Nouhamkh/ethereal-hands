@@ -1,0 +1,7 @@
+{
+  "name": "Ethereal Hands - Gesture Particle Art",
+  "description": "An interactive digital art piece where hand gestures morph particles into cosmic and emotional shapes. Uses MediaPipe for hand tracking and Three.js for real-time particle simulation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
