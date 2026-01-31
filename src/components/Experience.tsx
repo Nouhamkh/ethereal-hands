@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GestureType } from '../types';
 import { ShapeService } from '../services/shapeService';
 import { GestureService } from '../services/gestureService';
-import { PARTICLE_COUNT, LERP_FACTOR, NOISE_STRENGTH } from '../constants';
+import { PARTICLE_COUNT, LERP_FACTOR, NOISE_STRENGTH, GESTURE_COLORS } from '../constants';
 
 interface ExperienceProps {
   onGestureDetected: (gesture: GestureType) => void;
@@ -43,12 +43,15 @@ const Experience: React.FC<ExperienceProps> = ({ onGestureDetected }) => {
 
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
     
     for (let i = 0; i < PARTICLE_COUNT * 3; i++) {
       positions[i] = (Math.random() - 0.5) * 15;
+      colors[i] = 1;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
@@ -62,10 +65,12 @@ const Experience: React.FC<ExperienceProps> = ({ onGestureDetected }) => {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, 64, 64);
     }
+    const sprite = new THREE.CanvasTexture(canvas);
     
     const material = new THREE.PointsMaterial({
-      size: 0.5,
-      color: 0xffffff,
+      size: 0.15,
+      vertexColors: true,
+      map: sprite,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -201,7 +206,9 @@ const Experience: React.FC<ExperienceProps> = ({ onGestureDetected }) => {
 
       // Handle particles and morphing
       const posAttr = particles.geometry.attributes.position as THREE.BufferAttribute;
+      const colAttr = particles.geometry.attributes.color as THREE.BufferAttribute;
       const currentPos = posAttr.array as Float32Array;
+      const targetColor = new THREE.Color(GESTURE_COLORS[sceneRef.current.currentGesture]);
 
       // Rotation Logic: Wait 1s, then ramp up to slow rotation
       const timeSinceChange = time - sceneRef.current.gestureChangeTime;
@@ -239,9 +246,14 @@ const Experience: React.FC<ExperienceProps> = ({ onGestureDetected }) => {
         currentPos[i3] += (tx + nx - currentPos[i3]) * LERP_FACTOR;
         currentPos[i3 + 1] += (ty + ny - currentPos[i3 + 1]) * LERP_FACTOR;
         currentPos[i3 + 2] += (tz + nz - currentPos[i3 + 2]) * LERP_FACTOR;
+
+        colAttr.array[i3] += (targetColor.r - colAttr.array[i3]) * 0.06;
+        colAttr.array[i3 + 1] += (targetColor.g - colAttr.array[i3 + 1]) * 0.06;
+        colAttr.array[i3 + 2] += (targetColor.b - colAttr.array[i3 + 2]) * 0.06;
       }
 
       posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
       
       renderer.render(scene, camera);
     };
